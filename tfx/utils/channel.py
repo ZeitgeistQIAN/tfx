@@ -25,48 +25,27 @@ from tfx.utils import types
 
 
 class Channel(object):
-  """Tfx Channel.
+  """TFX Channel.
 
   TFX Channel is an abstract concept that connects data producers and data
   consumers. It contains restriction of the artifact type that should be fed
   into or read from it.
 
-  Attributes:
-    type_name: A string representing the artifact type the Channel takes.
+  Args:
+    type_name: Name of the type that should be fed into or read from the
+      Channel.
   """
 
   # TODO(b/124763842): Consider replace type_name with ArtifactType.
   # TODO(b/125348988): Add support for real Channel in addition to static ones.
-  def __init__(self,
-               type_name,
-               static_artifact_collection = None):
-    """Initialization of Channel.
-
-    Args:
-      type_name: Name of the type that should be fed into or read from the
-        Channel.
-      static_artifact_collection: (Optional) A collection of artifacts as the
-        values that can be read from the Channel. This is used to construct a
-        static Channel.
-    """
-
+  def __init__(self, type_name):
     self.type_name = type_name
-    self._static_artifact_collection = static_artifact_collection or []
-    self._validate_type()
 
   def __str__(self):
-    return 'Channel<{}: {}>'.format(self.type_name,
-                                    self._static_artifact_collection)
+    return 'Channel<{}>'.format(self.type_name)
 
   def __repr__(self):
     return self.__str__()
-
-  def _validate_type(self):
-    for artifact in self._static_artifact_collection:
-      if artifact.type_name != self.type_name:
-        raise ValueError(
-            'Static artifact collection with different artifact type than {}'
-            .format(self.type_name))
 
   def get(self):
     """Returns all artifacts that can be get from this Channel.
@@ -75,8 +54,8 @@ class Channel(object):
       An artifact collection.
     """
     # TODO(b/125037186): We should support dynamic query against a Channel
-    #  instead of a static Artifact collection.
-    return self._static_artifact_collection
+    # instead of a static Artifact collection.
+    raise NotImplementedError
 
   def type_check(self, expected_type_name):
     """Checks whether a Channel has the expected type name.
@@ -90,6 +69,42 @@ class Channel(object):
     if self.type_name != expected_type_name:
       raise TypeError('Expects {} but found {}'.format(expected_type_name,
                                                        str(self.type_name)))
+
+
+class StaticChannel(Channel):
+  """A TFX Channel whose artifacts are known at construction time.
+
+  Args:
+    type_name: Name of the type that should be fed into or read from the
+      Channel.
+    artifacts: (Optional) A static collection of artifacts for the
+      StaticChannel.
+  """
+
+  def __init__(self,
+               type_name,
+               artifacts):
+    super(StaticChannel, self).__init__(type_name)
+    self._artifacts = artifacts or []
+    self._validate_artifact_types()
+
+  def __str__(self):
+    return 'StaticChannel<{}: {}>'.format(self.type_name, self._artifacts)
+
+  def _validate_artifact_types(self):
+    for artifact in self._artifacts:
+      if artifact.type_name != self.type_name:
+        raise ValueError(
+            'StaticChannel has artifacts that do not match type {}'
+            .format(self.type_name))
+
+  def get(self):
+    """Returns the artifacts in this channel.
+
+    Returns:
+      An artifact collection.
+    """
+    return self._artifacts
 
 
 def as_channel(source):
@@ -111,9 +126,9 @@ def as_channel(source):
     try:
       first_element = next(iter(source))
       if isinstance(first_element, types.TfxType):
-        return Channel(
+        return StaticChannel(
             type_name=first_element.type_name,
-            static_artifact_collection=source)
+            artifacts=source)
       else:
         raise ValueError('Invalid source to be a channel: {}'.format(source))
     except StopIteration:

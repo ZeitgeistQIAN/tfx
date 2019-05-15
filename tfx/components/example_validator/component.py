@@ -80,12 +80,12 @@ class ExampleValidator(base_component.BaseComponent):
     Returns:
       ComponentOutputs object containing the dict of [Text -> Channel]
     """
-    output_artifact_collection = [types.TfxType('ExampleValidationPath',)]
+    output_artifacts = [types.TfxType('ExampleValidationPath',)]
     return base_component.ComponentOutputs({
         'output':
-            channel.Channel(
+            channel.StaticChannel(
                 type_name='ExampleValidationPath',
-                static_artifact_collection=output_artifact_collection)
+                artifacts=output_artifacts)
     })
 
   def _type_check(self, input_dict,

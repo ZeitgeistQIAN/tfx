@@ -95,16 +95,16 @@ class ExampleGen(base_component.BaseComponent):
     Returns:
       ComponentOutputs object containing the dict of [Text -> Channel]
     """
-    output_artifact_collection = [
+    output_artifacts = [
         types.TfxType('ExamplesPath', split=split_name)
         for split_name in utils.generate_output_split_names(
             self._input_config, self._output_config)
     ]
     return base_component.ComponentOutputs({
         'examples':
-            channel.Channel(
+            channel.StaticChannel(
                 type_name='ExamplesPath',
-                static_artifact_collection=output_artifact_collection)
+                artifacts=output_artifacts)
     })
 
   def _type_check(self, input_dict,

@@ -70,7 +70,7 @@ class StatisticsGen(base_component.BaseComponent):
       ComponentOutputs object containing the dict of [Text -> Channel]
     """
     # pylint: disable=g-complex-comprehension
-    output_artifact_collection = [
+    output_artifacts = [
         types.TfxType(
             'ExampleStatisticsPath',
             split=split,
@@ -79,9 +79,9 @@ class StatisticsGen(base_component.BaseComponent):
     # pylint: enable=g-complex-comprehension
     return base_component.ComponentOutputs({
         'output':
-            channel.Channel(
+            channel.StaticChannel(
                 type_name='ExampleStatisticsPath',
-                static_artifact_collection=output_artifact_collection)
+                artifacts=output_artifacts)
     })
 
   def _type_check(self, input_dict,
